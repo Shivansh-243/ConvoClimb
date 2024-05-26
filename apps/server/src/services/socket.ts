@@ -1,27 +1,47 @@
 import { Server } from "socket.io";
-class SocketServices {
+import Redis from "ioredis";
+
+const pub = new Redis({
+  host: "redis-357a5edf-scale-chat-app.h.aivencloud.com",
+  port: 18291,
+  username: "default",
+  password: "AVNS_V0YTGzA1Vaj7l9xfe19",
+});
+const sub = new Redis({
+  host: "redis-357a5edf-scale-chat-app.h.aivencloud.com",
+  port: 18291,
+  username: "default",
+  password: "AVNS_V0YTGzA1Vaj7l9xfe19",
+});
+class SocketService {
   private _io: Server;
 
-  constructor() {
-    console.log("init socket server");
-    this._io = new Server({
+  constructor(httpServer: any) {
+    console.log("Init Socket Service...");
+    this._io = new Server(httpServer, {
       cors: {
         allowedHeaders: ["*"],
         origin: "*",
       },
     });
+    sub.subscribe("MESSAGE");
   }
-
   public initListeners() {
     const io = this._io;
-    console.log("init socket listeners...");
+    console.log("Init Socket Listeners...");
 
-    io.on("connect", (socket) => {
-      console.log(`New Socket Connected `, socket.id);
-
+    console.log("happening");
+    io.on("connection", (socket: any) => {
+      console.log(`New Socket Connected`, socket.id);
       socket.on("event:message", async ({ message }: { message: string }) => {
-        console.log("new message recieved, ", message);
+        console.log("New Message Rec.", message);
+        // publish this message to the redis
+        await pub.publish("MESSAGE", JSON.stringify({ message }));
       });
+    });
+    sub.on("message", (channel, message) => {
+      console.log("new message from redis ", message);
+      io.emit("message", message);
     });
   }
 
@@ -30,4 +50,4 @@ class SocketServices {
   }
 }
 
-export default SocketServices;
+export default SocketService;

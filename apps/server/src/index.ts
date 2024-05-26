@@ -1,17 +1,20 @@
 import http from "http";
-import SocketServices from "./services/socket";
+import { Server } from "socket.io";
+import SocketService from "./services/socket";
 
 async function init() {
-  const socketService = new SocketServices();
-
+  // Create an HTTP server
   const httpServer = http.createServer();
 
-  //   const httpServer = http.createServer();
-  const PORT = process.env.PORT ? process.env.PORT : 8000;
-  httpServer.listen(PORT, () => {
-    console.log(`server is listening on the PORT: ${PORT}`);
-  });
+  const socketService = new SocketService(httpServer);
+
+  // Initialize socket listeners
   socketService.initListeners();
+
+  const PORT = process.env.PORT || 8000;
+  httpServer.listen(PORT, () => {
+    console.log(`Server is listening on port ${PORT}`);
+  });
 }
 
 init();
