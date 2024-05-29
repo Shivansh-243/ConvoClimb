@@ -1,5 +1,7 @@
 import { Server } from "socket.io";
 import Redis from "ioredis";
+import prsimaClient from "./prisma";
+import { produceMessage } from "./kafka";
 
 const pub = new Redis({
   host: "redis-357a5edf-scale-chat-app.h.aivencloud.com",
@@ -39,9 +41,13 @@ class SocketService {
         await pub.publish("MESSAGE", JSON.stringify({ message }));
       });
     });
-    sub.on("message", (channel, message) => {
-      console.log("new message from redis ", message);
-      io.emit("message", message);
+    sub.on("message", async (channel, message) => {
+      if (channel == "MESSAGE") {
+        console.log("new message from redis ", message);
+        io.emit("message", message);
+        await produceMessage(message);
+        console.log("message produced to the kafka broker");
+      }
     });
   }
 
